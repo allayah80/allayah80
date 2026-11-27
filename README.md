@@ -43,6 +43,18 @@ python generate_track.py --minutes 60 --bpm 48 --wav --out output/night1.mp3
 
 A 30-minute track takes about 4 minutes to render on a 4-core machine and needs about 3 GB of RAM.
 
+## Making a YouTube video
+Turn a short background clip (for example, a 5-second Canva export) and a track
+into a 1080p MP4. The clip plays forward, then backward, so the loop never jumps.
+```bash
+python make_video.py --clip puppy.mp4 --audio tracks/dog_sleep_music_30min_seed2026.mp3 --end 3.2
+```
+- `--start` / `--end`: use only part of the clip (for example, skip a moment where the dog wakes up)
+- `--no-pingpong`: loop the clip forward only, if it already loops seamlessly
+- `--maxrate`: video bitrate cap (default 1700k, which keeps a 30-minute video around 400 MB)
+
+A 30-minute video takes about 15–20 minutes to encode on 4 cores.
+
 ## Code layout
 - `sleep_music/piano.py`: piano synthesizer
 - `sleep_music/composer.py`: composition rules (keys, progressions, melodies, form)
