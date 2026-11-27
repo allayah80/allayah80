@@ -1,0 +1,4 @@
+pillow>=10.0
+numpy>=1.24
+pyyaml>=6.0
+# optional, most accurate caption sync:  pip install faster-whisper

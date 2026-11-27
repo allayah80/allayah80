@@ -48,3 +48,7 @@ A 30-minute track takes about 4 minutes to render on a 4-core machine and needs 
 - `sleep_music/composer.py`: composition rules (keys, progressions, melodies, form)
 - `sleep_music/ambient.py`: pad, ocean swell, and air layers
 - `sleep_music/mixer.py`: rendering, reverb, levelling, and export
+
+---
+
+Also in this repo: [`walmart-finds-video/`](walmart-finds-video/), the @thelayahedit vertical shopping video generator.

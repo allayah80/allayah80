@@ -1,0 +1,105 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  @thelayahedit — Walmart finds video config
+#  Edit this file, then run:  python make_videos.py config/walmart_finds_nov2026.yaml
+#
+#  RULES THAT KEEP IT HONEST
+#   • Only type prices you saw on Walmart, and put the date you checked them.
+#   • Only add a was_price if Walmart itself shows it, AND set
+#     was_price_shown_on_walmart: true. Otherwise it is ignored.
+#   • features = facts from the product listing (title/specs), not opinions.
+#   • No ratings, reviews, or "I use this" lines unless they are true for you.
+# ─────────────────────────────────────────────────────────────────────────────
+
+slug: walmart_finds_nov2026          # used in output file names
+
+brand:
+  handle: "@thelayahedit"
+  cta: "Shop my Walmart finds — link in bio."
+
+disclosure:
+  on_screen_short: "Affiliate links · I may earn a commission"   # visible the whole video
+  on_screen_full: >-
+    I may earn a commission if you buy through my links,
+    at no extra cost to you.
+  # Say this in your voiceover. The video reserves time for it right after the hook.
+  audible_script: "Quick note: these are affiliate links, so I may earn a commission."
+
+prices_verified_on: 2026-11-27       # default date for every product below
+
+# Spoken hook (first ~2 s of your voiceover). Captions are hidden during the hook
+# because the animated hook headline is already on screen.
+hook_voiceover: "Three Walmart finds for busy working women, all under $35."
+
+video:
+  fps: 30
+  target_seconds: 25        # used when there is no voiceover (20-30 allowed)
+  output_dir: output
+
+voiceover:
+  file:                     # e.g. voiceover/nov2026_take1.m4a  (or pass --voiceover)
+  alignment: auto           # auto | whisper | speech
+  whisper_model: base       # tiny | base | small  (only if faster-whisper is installed)
+  normalize_loudness: true
+
+captions:
+  enabled: true
+  show_during_hook: false
+  show_during_disclosure: false   # the disclosure card shows the text instead
+  show_during_cta: false
+
+ai_background_label: "AI-generated background"
+
+products:
+  - id: canon-printer
+    name: "Canon PIXMA TS3722 Wireless All-In-One Inkjet Printer"
+    short_name: "Wireless All-In-One Printer"
+    category: "Tech"
+    image: assets/products/canon-pixma-ts3722-white.png
+    price: 29.00
+    was_price: 53.00
+    was_price_shown_on_walmart: true
+    features: ["Wireless", "All-in-one inkjet", "For your home office"]
+    voiceover: "This Canon PIXMA wireless all-in-one printer is $29 right now."
+
+  - id: lap-desk
+    name: "PHANCIR Folding Lap Desk with USB Fan and Reading Light, Pink"
+    short_name: "Folding Lap Desk"
+    category: "Personal organization"
+    image: assets/products/phancir-lap-desk-pink.png
+    price: 17.99
+    features: ["USB fan + reading light", "Cup holder & drawer", "23.6-inch top", "Folds flat"]
+    voiceover: "This folding lap desk has a USB fan, reading light, cup holder and a drawer, for $17.99."
+
+  - id: beats-solo-buds
+    name: "Beats by Dr. Dre Solo Buds Bluetooth In-Ear Earbuds, Ivory"
+    short_name: "Beats Solo Buds in Ivory"
+    category: "Tech"
+    image: assets/products/beats-solo-buds-ivory.png
+    price: 34.00
+    was_price: 79.99
+    was_price_shown_on_walmart: true
+    features: ["Bluetooth", "In-ear earbuds", "Color: Ivory"]
+    voiceover: "And the Beats Solo Buds in ivory are $34."
+
+# Three variations from the same product images.
+# hook/kicker placeholders are computed from the products above, so they stay true:
+#   {count} {count_word} {under_price} {max_price} {min_price}
+# Wrap a word in *asterisks* to accent it.
+variations:
+  - id: editorial
+    look: editorial          # cream + serif + soft rise transitions
+    hook: "Walmart finds for *busy* working women"
+    kicker: "{count} finds · all under {under_price}"
+    ai_background:           # optional, e.g. assets/backgrounds/cream_linen_ai.png
+
+  - id: checklist
+    look: checklist          # blush + numbered checklist + panel wipes
+    hook: "{count} Walmart finds under {under_price}"
+    kicker: "Home office · Tech · Desk"
+    ai_background:
+
+  - id: bold
+    look: bold               # black + cream type + whip pans
+    hook: "Busy? These Walmart finds are under {under_price}"
+    kicker: "for working women"
+    ai_background:
