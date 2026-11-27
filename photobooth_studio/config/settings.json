@@ -1,0 +1,41 @@
+{
+  "shop_name": "Your Shop Name",
+  "currency": "USD",
+
+  "default_variations": 4,
+  "max_bundles_per_night": 2,
+  "autopilot": true,
+  "autopilot_lead_weeks": 8,
+
+  "video_seconds": 8,
+  "video_fps": 30,
+  "preview_watermark": true,
+
+  "max_zip_mb": 20,
+
+  "pricing": {
+    "component_prices": {
+      "welcome_screen": 4.0,
+      "welcome_video": 6.0,
+      "strip_2x6": 4.0,
+      "overlay_4x6": 4.0,
+      "gif_overlay": 3.0,
+      "buttons": 3.0
+    },
+    "bundle_discount": 0.6,
+    "extra_variation_uplift": 0.12,
+    "min_price": 4.99,
+    "max_price": 39.99
+  },
+
+  "marketplace_fees": {
+    "listing_fee": 0.20,
+    "transaction_pct": 0.065,
+    "payment_pct": 0.03,
+    "payment_fixed": 0.25
+  },
+
+  "compute_cost_per_hour": 0.02,
+
+  "blocked_terms_extra": []
+}
