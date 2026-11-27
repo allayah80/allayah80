@@ -160,7 +160,7 @@ def test_build_job_end_to_end(small_sizes):
     assert (root / "listing" / "listing.json").exists()
     rep = json.loads((root / "validation.json").read_text())
     assert rep["files_ok"] == rep["files_checked"] > 20
-    assert len(p["zip_files"]) == 1
+    assert sorted(p["zip_files"]) == [f"dist/etsy/{p['sku']}.zip", f"dist/shopify/{p['sku']}.zip"]
     names = zipfile.ZipFile(root / p["zip_files"][0]).namelist()
     assert any("03_Photo_Strips_2x6" in n and n.endswith("_blank.png") for n in names)
     assert any("button_start" in n for n in names)

@@ -26,8 +26,9 @@ You also get:
 - **Color variations**: the same layout re-colored automatically, with names like *Aqua Noir* or *Lavender*.
 - **Text and blank versions** of every print design, so buyers can add their own names and dates.
 - **Listing preview images**: 6 mockups at 2400×1800, including a hero mockup with a tablet and prints, a colors grid, print templates, GIF overlays with buttons, a "what's included" image and an animated GIF.
-- **Marketplace-ready ZIPs**, split automatically if a bundle is over 20 MB. Each ZIP has a README and a buyer license.
-- **Listing copy**: a title of 140 characters or fewer, a description, 13 tags of 20 characters or fewer, a suggested price, and estimated fees and net.
+- **Store-ready ZIPs for Etsy and/or Shopify**: Etsy ZIPs split automatically at 20 MB, and Shopify gets one ZIP per bundle. Each ZIP has a README and a buyer license.
+- **Listing copy**: a title of 140 characters or fewer, a description, 13 Etsy tags of 20 characters or fewer, a suggested price, and estimated fees and take-home for each store.
+- **Shopify extras**: square 2048×2048 photos, an SEO title and description, a URL handle, an HTML description, and a product import CSV that creates the product as an unpublished draft.
 - **Marketing drafts**:
   - a Pinterest pin (1000×1500)
   - an Instagram carousel (5 slides, 1080×1350)
@@ -73,7 +74,9 @@ Open **http://127.0.0.1:8765**. The dashboard is only reachable from your own co
   - Then click **Approve** or **Reject**.
   - **Add more color variations** re-renders an approved design with extra colors.
   - Once you have uploaded it to your shop yourself, click **Mark as listed**.
-- **Sales & costs**: import your marketplace sales CSV (on Etsy: *Shop Manager → Settings → Options → Download Data → Sold Order Items*) and record costs such as listing fees or ads.
+- **Sales & costs**: import your sales CSV and record costs such as listing fees or ads. The store is detected automatically.
+  - **Etsy**: *Shop Manager → Settings → Options → Download Data → Sold Order Items*.
+  - **Shopify**: *Orders → Export*. Refunded and pending orders are skipped, and card fees are estimated from your settings because Shopify's export doesn't include them.
 - **Daily report**: what was built, errors, profit and next steps.
 
 ### 2. Turn on the overnight workflow
@@ -98,12 +101,25 @@ Your computer must be awake at that time. To run the workflow by hand: `python -
 
 1. Open the dashboard and review each draft.
 2. Approve the good ones.
-3. Open the product's folder in `output/bundles/<SKU>/`:
-   - `dist/*.zip`: the files the customer downloads. Upload these to your shop.
-   - `previews/*.jpg`: the listing photos.
-   - `listing/listing.md`: the title, description, tags and price to paste in.
-   - `marketing/`: drafts to post when you choose.
+3. Open the product's folder in `output/bundles/<SKU>/` and follow the steps for your store below.
 4. Click **Mark as listed**.
+
+**Etsy**
+
+- Upload every ZIP in `dist/etsy/` as the digital files.
+- Use the photos in `previews/*.jpg`, in order.
+- Use `marketing/tiktok_reel_1080x1920.mp4` as the listing video.
+- Paste the title, tags, description and price from `listing/listing.md`.
+
+**Shopify**
+
+1. Install a digital delivery app once, for example Shopify's free *Digital Downloads* app.
+2. Go to **Products → Import** and choose `listing/shopify_product_import.csv`. For several products at once, use **Inventory → Export approved products to a Shopify import CSV**, or run `python -m studio shopify-csv`. Products are created as **drafts**: unpublished, with no shipping, and with the SEO fields filled in.
+3. Open the draft product and add the photos from `previews/square/`.
+4. Attach `dist/shopify/*.zip` in your digital downloads app.
+5. Publish it yourself when you're ready.
+
+`marketing/` holds the social media drafts. Post them when you choose.
 
 ## Command line
 
@@ -117,7 +133,8 @@ python -m studio variations 3 --extra 2   # add color variations to product 3
 python -m studio presets                  # palette presets
 python -m studio overnight                # run the nightly workflow now
 python -m studio report                   # write today's report
-python -m studio import-sales orders.csv  # import sales CSV
+python -m studio import-sales orders.csv  # import sales CSV (Etsy or Shopify, detected automatically)
+python -m studio shopify-csv              # Shopify import CSV for all approved products
 python -m studio cost advertising 5.00 --note "Pinterest promo"
 ```
 
@@ -131,9 +148,9 @@ python -m studio cost advertising 5.00 --note "Pinterest promo"
 | `autopilot` | `true` lets the workflow choose seasonal themes when the queue is empty; `false` makes it build only what you queue |
 | `video_seconds`, `video_fps` | Animated welcome screen length |
 | `preview_watermark` | Faint "PREVIEW" watermark on listing images |
-| `max_zip_mb` | ZIP split threshold (Etsy allows 20 MB per file) |
+| `stores` | `["etsy"]`, `["shopify"]` or both (the default). Controls which ZIPs, images, copy and import files are made |
+| `store_settings` | For each store: ZIP size limit (`max_zip_mb`) and fees. Shopify card fees depend on your plan; update `payment_pct` and `payment_fixed` to match yours |
 | `pricing` | Component prices, bundle discount, uplift per extra color, min/max price |
-| `marketplace_fees` | Used to estimate fees and net per sale |
 | `compute_cost_per_hour` | Electricity cost estimate per render-hour (logged automatically) |
 | `blocked_terms_extra` | Your own additions to the trademark blocklist |
 
@@ -165,12 +182,13 @@ studio/
   render.py      static product renderers       animate.py   looping MP4 welcome screens
   previews.py    listing mockups                marketing.py social drafts & captions
   listing.py     titles/descriptions/tags/price packager.py   ZIPs + buyer README/license
+  stores.py      Etsy/Shopify limits, fees, SEO, Shopify import CSV
   validate.py    file & listing validation      pipeline.py  builds one bundle from a job
   db.py          SQLite inventory               scheduler.py overnight workflow + autopilot
   sales.py       CSV sales import & summaries   report.py    daily report
   dashboard.py   local web dashboard            cli.py       command line
 scripts/         schedule installers, launchers
-tests/           test_phase1.py (core), test_phase2.py (media), test_phase3.py (automation)
+tests/           test_phase1.py (core), test_phase2.py (media), test_phase3.py (automation), test_shopify.py
 output/          generated bundles, reports, logs, database (git-ignored)
 ```
 
@@ -181,4 +199,4 @@ output/          generated bundles, reports, logs, database (git-ignored)
   - more motif packs
   - a print-preview proof sheet
 - **Phase 5**: optional AI copywriting. This would be off by default and capped by a budget setting you approve.
-- **Phase 6**: optional marketplace and social API **draft** uploads, which you would confirm individually.
+- **Phase 6**: optional uploads to Etsy, Shopify and social media through their APIs, created as **drafts** that you confirm one by one.

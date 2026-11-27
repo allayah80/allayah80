@@ -10,7 +10,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from . import db, listing, packager, render, themes, validate
+from . import db, listing, packager, render, stores, themes, validate
 from .config import PRODUCT_SPECS, load_settings, out_dirs, spec
 from .palettes import parse_palette, variations
 
@@ -142,16 +142,39 @@ class Builder:
                                              self.job["product_types"], self.palettes, sizes)
         self.listing.update(listing.price_for(self.job["product_types"], len(self.palettes),
                                               self.profile["category"]))
+        self.stores = stores.enabled(self.settings)
+        if "shopify" in self.stores:
+            self.listing["shopify"] = stores.shopify_fields(self.listing, self.sku, self.job["theme"],
+                                                            self.profile["category"], len(self.palettes), self.settings,
+                                                            self.job["product_types"])
         for issue in validate.check_listing(self.listing):
             self.err("listing", issue)
-        (self.root / "listing" / "listing.json").write_text(json.dumps(self.listing, indent=2), encoding="utf-8")
+        ldir = self.root / "listing"
+        (ldir / "listing.json").write_text(json.dumps(self.listing, indent=2), encoding="utf-8")
+        fees = "; ".join(f"{k.title()}: est. fees ${v['fees']:.2f}, est. net ${v['net']:.2f}"
+                         for k, v in self.listing["by_store"].items())
         md = [f"# {self.listing['title']}", "",
-              f"**Suggested price:** ${self.listing['price']:.2f} "
-              f"(est. fees ${self.listing['estimated_fees']:.2f}, est. net ${self.listing['estimated_net']:.2f})",
-              f"_Pricing basis: {self.listing['rationale']}_", "",
-              "**Tags (13 max):** " + ", ".join(self.listing["tags"]), "", "## Description", "",
-              self.listing["description"]]
-        (self.root / "listing" / "listing.md").write_text("\n".join(md), encoding="utf-8")
+              f"**Suggested price:** ${self.listing['price']:.2f} ({fees})",
+              f"_Pricing basis: {self.listing['rationale']}_", ""]
+        if "etsy" in self.stores:
+            md += ["## Etsy", "", "**Title:** " + self.listing["title"], "",
+                   "**Tags (13 max):** " + ", ".join(self.listing["tags"]), "",
+                   "**Files:** upload every ZIP in `dist/etsy/`. **Photos:** `previews/*.jpg` in order.", ""]
+        if "shopify" in self.stores:
+            sh = self.listing["shopify"]
+            md += ["## Shopify", "",
+                   "**Fastest way:** Shopify admin -> Products -> Import -> `listing/shopify_product_import.csv` "
+                   "(creates an unpublished draft), then add the square photos from `previews/square/` and attach "
+                   "`dist/shopify/*.zip` in your digital downloads app.", "",
+                   f"**Title:** {self.listing['title'].split('|')[0].strip()}",
+                   f"**URL handle:** {sh['handle']}",
+                   f"**SEO title ({len(sh['seo_title'])}/70):** {sh['seo_title']}",
+                   f"**SEO description ({len(sh['seo_description'])}/320):** {sh['seo_description']}",
+                   f"**Product type:** {sh['product_type']}",
+                   "**Tags:** " + ", ".join(sh["tags"]), ""]
+            stores.write_csv([stores.csv_row(self.listing, self.sku)], ldir / "shopify_product_import.csv")
+        md += ["## Description", "", self.listing["description"]]
+        (ldir / "listing.md").write_text("\n".join(md), encoding="utf-8")
         sizes_lines = [f"- {PRODUCT_SPECS[t]['label']}: {w}x{h}px" for t, (w, h) in sizes.items()]
         packager.write_docs(self.product_dir, self.sku, self.listing["title"], self.settings["shop_name"], sizes_lines)
 
@@ -180,10 +203,14 @@ class Builder:
             self.err("marketing", f"{e}\n{traceback.format_exc(limit=3)}")
 
     def package(self):
-        max_mb = self.settings["max_zip_mb"]
-        self.zips = packager.package(self.product_dir, self.root / "dist", self.sku, max_mb)
-        for z in self.zips:
-            self.record("zip", "", z, validate.check_zip(z, max_mb))
+        """One set of ZIPs per store, each within that store's file-size limit."""
+        self.zips = []
+        for store in stores.enabled(self.settings):
+            max_mb = stores.cfg(store, self.settings)["max_zip_mb"]
+            zips = packager.package(self.product_dir, self.root / "dist" / store, self.sku, max_mb)
+            for z in zips:
+                self.record("zip", store, z, validate.check_zip(z, max_mb))
+            self.zips += zips
 
     # ----------------------------------------------------------- main
     def run(self) -> int:

@@ -41,7 +41,7 @@ def test_full_bundle_with_previews_and_marketing(small_sizes):
     p = db.get_product(pid)
     assert p["valid"] == 1, p["validation"]["errors"]
     root = Path(p["bundle_dir"])
-    previews = sorted(x.name for x in (root / "previews").iterdir())
+    previews = sorted(x.name for x in (root / "previews").iterdir() if x.is_file())
     assert previews == ["01_hero.jpg", "02_color_variations.jpg", "03_print_templates.jpg",
                         "04_gif_and_buttons.jpg", "05_whats_included.jpg", "06_gif_overlay_preview.gif"]
     assert Image.open(root / "previews" / "01_hero.jpg").size == (2400, 1800)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import zipfile
 from pathlib import Path
@@ -120,4 +121,15 @@ def check_listing(listing: dict) -> list[str]:
             issues.append(f"tag over 20 chars: {t}")
     if not listing.get("price") or listing["price"] <= 0:
         issues.append("missing price")
+    sh = listing.get("shopify")
+    if sh:
+        if len(sh["seo_title"]) > 70:
+            issues.append("Shopify SEO title over 70 characters")
+        if len(sh["seo_description"]) > 320:
+            issues.append("Shopify SEO description over 320 characters")
+        if not re.fullmatch(r"[a-z0-9-]+", sh["handle"]):
+            issues.append(f"bad Shopify handle: {sh['handle']}")
+        hits = find_blocked(" ".join([sh["seo_title"], sh["seo_description"], " ".join(sh["tags"])]))
+        if hits:
+            issues.append(f"blocked terms in Shopify fields: {', '.join(hits)}")
     return issues

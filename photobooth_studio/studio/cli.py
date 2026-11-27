@@ -79,6 +79,16 @@ def cmd_import_sales(a):
     print(f"Imported {added} sale rows ({skipped} duplicates/invalid skipped).")
 
 
+def cmd_shopify_csv(a):
+    from . import stores
+    if a.ids:
+        prods = [db.get_product(int(i)) for i in a.ids.split(",")]
+    else:
+        prods = db.rows("SELECT * FROM products WHERE status=? ORDER BY id", (a.status,))
+    path = stores.export_products([p for p in prods if p])
+    print(path or "No matching products with Shopify listing data.")
+
+
 def cmd_cost(a):
     db.add_cost(a.category, a.amount, a.note or "")
     print("Cost recorded.")
@@ -134,6 +144,11 @@ def main(argv=None):
     i.add_argument("csv")
     i.add_argument("--source", default="etsy")
     i.set_defaults(fn=cmd_import_sales)
+
+    x = sub.add_parser("shopify-csv", help="write a Shopify product import CSV (drafts)")
+    x.add_argument("--status", default="approved")
+    x.add_argument("--ids", help="comma-separated product ids instead of --status")
+    x.set_defaults(fn=cmd_shopify_csv)
 
     c = sub.add_parser("cost", help="record a manual cost")
     c.add_argument("category")

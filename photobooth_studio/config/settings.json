@@ -11,7 +11,18 @@
   "video_fps": 30,
   "preview_watermark": true,
 
-  "max_zip_mb": 20,
+  "stores": ["etsy", "shopify"],
+  "store_settings": {
+    "etsy": {
+      "max_zip_mb": 20,
+      "fees": {"listing_fee": 0.20, "transaction_pct": 0.065, "payment_pct": 0.03, "payment_fixed": 0.25}
+    },
+    "shopify": {
+      "max_zip_mb": 500,
+      "fees": {"listing_fee": 0.0, "transaction_pct": 0.0, "payment_pct": 0.029, "payment_fixed": 0.30},
+      "product_type": "Digital Download"
+    }
+  },
 
   "pricing": {
     "component_prices": {
@@ -26,13 +37,6 @@
     "extra_variation_uplift": 0.12,
     "min_price": 4.99,
     "max_price": 39.99
-  },
-
-  "marketplace_fees": {
-    "listing_fee": 0.20,
-    "transaction_pct": 0.065,
-    "payment_pct": 0.03,
-    "payment_fixed": 0.25
   },
 
   "compute_cost_per_hour": 0.02,

@@ -181,7 +181,9 @@ def products_page(q):
     ps = db.rows(f"SELECT * FROM products {where} ORDER BY id DESC", params)
     tabs = " ".join(f"<a class='btn {'ghost' if s != status else ''}' href='/products?status={s}'>{s or 'all'}</a>"
                     for s in ("", "draft", "approved", "listed", "rejected"))
-    return page("Inventory", f"<h1>Inventory ({len(ps)})</h1><div class=row style='flex:none;gap:6px;margin-bottom:16px'>{tabs}</div>"
+    export = ("<form method=post action=/export/shopify style='margin:0 0 16px'><button class=ghost>"
+              "Export approved products to a Shopify import CSV</button></form>")
+    return page("Inventory", f"<h1>Inventory ({len(ps)})</h1><div class=row style='flex:none;gap:6px;margin-bottom:16px'>{tabs}</div>{export}"
                 f"<div class=grid>{''.join(product_card(p) for p in ps) or '<p class=muted>Nothing here.</p>'}</div>")
 
 
@@ -203,12 +205,31 @@ def product_page(pid):
            f"style='width:100%;max-width:720px;border-radius:8px'></video>") if videos else ""
     captions = (root / "marketing" / "captions.md")
     cap = f"<h2>Captions &amp; scripts (draft)</h2><pre>{e(captions.read_text())}</pre>" if captions.exists() else ""
-    zips = "".join(f"<li><a href='{file_url(root / z)}'>{e(Path(z).name)}</a> "
-                   f"({(root / z).stat().st_size / 1e6:.1f} MB)</li>" for z in p["zip_files"] if (root / z).exists())
+    def store_of(z):
+        parts = Path(z).parts
+        return parts[1] if len(parts) > 2 else "files"
+    zips = ""
+    for store in dict.fromkeys(store_of(z) for z in p["zip_files"]):
+        items = "".join(f"<li><a href='{file_url(root / z)}'>{e(Path(z).name)}</a> "
+                        f"({(root / z).stat().st_size / 1e6:.1f} MB)</li>"
+                        for z in p["zip_files"] if store_of(z) == store and (root / z).exists())
+        zips += f"<h3>{e(store.title())}</h3><ul>{items}</ul>"
+    shop_csv = root / "listing" / "shopify_product_import.csv"
+    if shop_csv.exists():
+        zips += (f"<p><a class='btn ghost' href='{file_url(shop_csv)}'>Shopify import CSV (creates a draft)</a> "
+                 f"<span class=muted>Square photos: <code>previews/square/</code></span></p>")
     v = p["validation"] or {}
     errs = "".join(f"<li><code>{e(x['stage'])}</code> {e(x['message'][:400])}</li>" for x in v.get("errors", []))
     lst = root / "listing" / "listing.json"
     meta = json.loads(lst.read_text()) if lst.exists() else {}
+    by_store = meta.get("by_store") or {"store": {"fees": meta.get("estimated_fees", 0), "net": meta.get("estimated_net", 0)}}
+    fee_txt = "; ".join(f"{k.title()}: fees ${v['fees']:.2f}, net ${v['net']:.2f}" for k, v in by_store.items())
+    sh = meta.get("shopify")
+    shopify_card = "" if not sh else f"""<div class=card><h2 style=margin-top:0>Shopify fields</h2>
+ <p><b>URL handle:</b> {e(sh['handle'])}</p>
+ <p><b>SEO title</b> <span class=muted>({len(sh['seo_title'])}/70)</span><br>{e(sh['seo_title'])}</p>
+ <p><b>SEO description</b> <span class=muted>({len(sh['seo_description'])}/320)</span><br>{e(sh['seo_description'])}</p>
+ <p><b>Type:</b> {e(sh['product_type'])} &nbsp; <b>Tags:</b> {' '.join(f'<span class=chip>{e(t)}</span>' for t in sh['tags'])}</p></div>"""
     actions = "".join(
         f"<button name=status value={s} class='{ {'approved': '', 'rejected': 'danger'}.get(s, 'ghost') }'>{label}</button> "
         for s, label in (("approved", "Approve"), ("rejected", "Reject"), ("listed", "Mark as listed"), ("draft", "Back to draft"))
@@ -226,11 +247,12 @@ def product_page(pid):
 <h2>Listing previews</h2><div class=gallery>{gallery}</div>
 {vid}
 <div class=card><h2 style=margin-top:0>Listing copy</h2>
- <p><b>Suggested price:</b> ${p['price']:.2f} <span class=muted>(est. fees ${meta.get('estimated_fees', 0):.2f}, est. net ${meta.get('estimated_net', 0):.2f}; {e(meta.get('rationale', ''))})</span></p>
- <p><b>Tags:</b> {' '.join(f'<span class=chip>{e(t)}</span>' for t in p['tags'])}</p>
+ <p><b>Suggested price:</b> ${p['price']:.2f} <span class=muted>({e(fee_txt)}; {e(meta.get('rationale', ''))})</span></p>
+ <p><b>Etsy tags:</b> {' '.join(f'<span class=chip>{e(t)}</span>' for t in p['tags'])}</p>
  <pre>{e(p['description'])}</pre>
  <p><b>Colors:</b><br>{swatches(p['palettes'])}</p></div>
-<div class=card><h2 style=margin-top:0>Download files (for you to upload)</h2><ul>{zips}</ul>
+{shopify_card}
+<div class=card><h2 style=margin-top:0>Download files (for you to upload)</h2>{zips}
  <p class=muted>Folder: {e(str(root))}</p>
  <h3>Validation</h3><p>{v.get('files_ok', 0)}/{v.get('files_checked', 0)} files passed.</p><ul>{errs or '<li class=ok>No issues.</li>'}</ul></div>
 <h2>Marketing drafts (not posted)</h2><div class=gallery>{mk_imgs}</div><div class=row style=margin-top:12px>{mk_vids}</div>
@@ -251,7 +273,9 @@ def money_page():
 <div class=stats><div><b>${s30['revenue']:.2f}</b><span>revenue 30d</span></div><div><b>${s30['costs']:.2f}</b><span>costs 30d</span></div>
 <div><b>{report._m(s30['profit'])}</b><span>profit 30d</span></div><div><b>{report._m(sall['profit'])}</b><span>profit all time</span></div></div>
 <div class=card><h2 style=margin-top:0>Import sales CSV</h2>
-<p class=muted>Download your orders CSV from your marketplace (e.g. Etsy: Shop Manager → Settings → Options → Download Data → Sold Order Items) and load it here. Duplicates are skipped.</p>
+<p class=muted>Download your orders CSV and load it here. Duplicates are skipped.<br>
+<b>Etsy:</b> Shop Manager → Settings → Options → Download Data → Sold Order Items.<br>
+<b>Shopify:</b> Orders → Export → All orders, "CSV for Excel, Numbers, or other spreadsheet programs" (detected automatically; card fees are estimated from your settings).</p>
 <form method=post action=/sales/import><input type=file accept=.csv onchange=pickFile(this)>
 <textarea id=csvtext name=csv rows=5 placeholder="...or paste CSV text"></textarea><p><button>Import</button></p></form></div>
 <div class=card><h2 style=margin-top:0>Record a cost</h2><form method=post action=/costs class=row>
@@ -396,6 +420,17 @@ class Handler(BaseHTTPRequestHandler):
                 added, skipped = sales.import_text(form.get("csv", [""])[0])
                 _log(f"Sales import: {added} added, {skipped} skipped")
                 return self.redirect("/money")
+            if parts == ["export", "shopify"]:
+                from . import stores
+                path = stores.export_products(db.rows("SELECT * FROM products WHERE status='approved' ORDER BY id"))
+                if not path:
+                    return self.error_page("No approved products with Shopify listing data yet. Approve a product "
+                                           "built with Shopify mode on, then try again.")
+                return self.send(page("Shopify export", f"<div class=card><h1>Shopify import file ready</h1>"
+                                      f"<p><a class=btn href='{file_url(path)}'>Download {e(path.name)}</a></p>"
+                                      "<p>In Shopify admin: <b>Products → Import</b>, choose this file. Products are "
+                                      "created as <b>drafts</b> (not published, no shipping). Then add the square "
+                                      "photos and attach each ZIP in your digital downloads app.</p></div>"))
             if parts == ["costs"]:
                 db.add_cost(form["category"][0], float(form["amount"][0]), form.get("note", [""])[0])
                 return self.redirect("/money")

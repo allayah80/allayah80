@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-from . import render
+from . import render, stores
 from .config import PRODUCT_SPECS, spec
 from .palettes import Palette, mix, smart_title, soft_bg
 
@@ -263,4 +263,24 @@ def build_all(b) -> list[Path]:
         gp = out / "06_gif_overlay_preview.gif"
         frames[0].save(gp, save_all=True, append_images=frames[1:], duration=450, loop=0, optimize=True)
         files.append(gp)
+    if "shopify" in stores.enabled(b.settings):
+        files += square_versions([f for f in files if f.suffix == ".jpg"], pal, out / "square")
     return files
+
+
+def square_versions(paths: list[Path], pal: Palette, out: Path, size: int = 2048) -> list[Path]:
+    """Square copies of the 4:3 previews (Shopify themes crop to square)."""
+    out.mkdir(parents=True, exist_ok=True)
+    res = []
+    for p in paths:
+        im = Image.open(p).convert("RGB")
+        top, bottom = im.getpixel((im.width // 2, 2)), im.getpixel((im.width // 2, im.height - 3))
+        t = np.linspace(0, 1, size, dtype=np.float32)[:, None, None]
+        arr = np.array(top, np.float32) * (1 - t) + np.array(bottom, np.float32) * t
+        sq = Image.fromarray(np.repeat(arr, size, axis=1).astype(np.uint8), "RGB")
+        im = im.resize((size, round(im.height * size / im.width)), Image.LANCZOS)
+        sq.paste(im, (0, (size - im.height) // 2))
+        dst = out / f"{p.stem}_square.jpg"
+        sq.save(dst, "JPEG", quality=90, optimize=True, dpi=(72, 72))
+        res.append(dst)
+    return res

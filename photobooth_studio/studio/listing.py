@@ -10,7 +10,7 @@ import random
 import re
 
 from .config import PRODUCT_SPECS, load_settings
-from . import db
+from . import db, stores
 from .palettes import smart_title
 
 TYPE_NOUNS = {
@@ -64,10 +64,13 @@ def price_for(product_types, n_variations, category=None) -> dict:
     # charm pricing: snap to the nearest X.99
     price = math.floor(comps + 0.5) - 0.01
     price = round(min(max(price, pr["min_price"]), pr["max_price"]), 2)
-    fees = st["marketplace_fees"]
-    est_fees = fees["listing_fee"] + price * (fees["transaction_pct"] + fees["payment_pct"]) + fees["payment_fixed"]
-    return {"price": price, "estimated_fees": round(est_fees, 2), "estimated_net": round(price - est_fees, 2),
-            "rationale": "; ".join(rationale)}
+    by_store = {}
+    for store in stores.enabled(st):
+        fee = stores.estimate_fees(price, store, st)
+        by_store[store] = {"fees": fee, "net": round(price - fee, 2)}
+    first = next(iter(by_store.values()))
+    return {"price": price, "estimated_fees": first["fees"], "estimated_net": first["net"],
+            "by_store": by_store, "rationale": "; ".join(rationale)}
 
 
 def build_listing(sku, theme, profile, product_types, palettes, sizes) -> dict:
