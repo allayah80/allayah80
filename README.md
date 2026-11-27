@@ -1,3 +1,5 @@
+> **Also in this repo:** [Photo Booth Studio](photobooth_studio/README.md) - automated digital product production for photo booth businesses.
+
 # Dog Sleep Music Generator
 
 Generates original, calm instrumental tracks for dog sleep / relaxation videos.
