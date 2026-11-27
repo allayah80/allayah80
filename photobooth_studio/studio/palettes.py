@@ -179,3 +179,19 @@ def variations(base: Palette, count: int) -> list[Palette]:
             seen.add(tuple(p.hexes()))
             out.append(p)
     return out[:count]
+
+
+def is_dark(pal: "Palette") -> bool:
+    return luminance(pal.bg) < 0.2
+
+
+def soft_bg(pal: "Palette", strength: float = 0.55):
+    """A pleasant backdrop tint: light palettes get lighter, dark ones stay dark."""
+    if is_dark(pal):
+        return mix(pal.bg, pal.primary, 0.35)
+    return mix(pal.bg, (255, 255, 255), strength)
+
+
+def smart_title(s: str) -> str:
+    """Title-case that keeps apostrophes right (New Year's, not New Year'S)."""
+    return " ".join(w if w[:1].isupper() else w[:1].upper() + w[1:] for w in s.split())

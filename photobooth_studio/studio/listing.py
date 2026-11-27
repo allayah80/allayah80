@@ -11,6 +11,7 @@ import re
 
 from .config import PRODUCT_SPECS, load_settings
 from . import db
+from .palettes import smart_title
 
 TYPE_NOUNS = {
     "welcome_screen": "Welcome Screen",
@@ -71,7 +72,7 @@ def price_for(product_types, n_variations, category=None) -> dict:
 
 def build_listing(sku, theme, profile, product_types, palettes, sizes) -> dict:
     rng = random.Random(sku)
-    theme_t = _title_case(theme.strip())
+    theme_t = smart_title(theme.strip())
     nouns = [TYPE_NOUNS[t] for t in product_types if t in TYPE_NOUNS]
     is_bundle = len(product_types) > 1
     if is_bundle:
