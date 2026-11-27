@@ -32,7 +32,7 @@ def main():
     ap.add_argument("--end", type=float, default=None, help="use clip up to this second")
     ap.add_argument("--no-pingpong", action="store_true",
                     help="loop forward only (use if the clip already loops seamlessly)")
-    ap.add_argument("--maxrate", default="1700k", help="video bitrate cap (default 1700k)")
+    ap.add_argument("--maxrate", default="1350k", help="video bitrate cap (default 1350k)")
     ap.add_argument("--out", default=None, help="output .mp4")
     args = ap.parse_args()
 

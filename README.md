@@ -51,7 +51,7 @@ python make_video.py --clip puppy.mp4 --audio tracks/dog_sleep_music_30min_seed2
 ```
 - `--start` / `--end`: use only part of the clip (for example, skip a moment where the dog wakes up)
 - `--no-pingpong`: loop the clip forward only, if it already loops seamlessly
-- `--maxrate`: video bitrate cap (default 1700k, which keeps a 30-minute video around 400 MB)
+- `--maxrate`: video bitrate cap (default 1350k, which keeps a 30-minute video around 350 MB)
 
 A 30-minute video takes about 15–20 minutes to encode on 4 cores.
 
